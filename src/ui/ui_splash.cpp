@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "../sound.h"
 #include <stdio.h>
 #include <Arduino.h>
 
@@ -10,6 +11,7 @@ static unsigned long splash_start = 0;
 static bool splash_boot = true;
 
 static void cb_tap(lv_event_t *e) {
+    sound_click();
     ui_navigate(Screen::HOME);
 }
 

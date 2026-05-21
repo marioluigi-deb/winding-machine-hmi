@@ -20,10 +20,10 @@ void setup() {
     display_init();       // LCD + LVGL, backlight stays OFF
     ui_init();
     motion_init();
-    sound_init();
     wifi_init();
     web_server_init();
     notifications_init();
+    sound_init();
     display_backlight_on();
 
     Serial.println("=== READY ===");

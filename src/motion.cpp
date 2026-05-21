@@ -4,30 +4,31 @@
 #include <Arduino.h>
 
 // === P4 GPIO assignments for stepper drivers (DM542) ===
-// Free P4 GPIOs after display/touch/SDIO: 0,1,21-35,37-39,43,44,47,48
+// Free P4 GPIOs after display/touch/SDIO/audio/camera:
+// Used: 2-19(LCD), 20(C6rst), 21-23(I2S), 33-34(cam SCCB), 36,42,45,46(touch), 40-41(sync), 49-54(SDIO)
+// Available: 0,1,24-32,35,37-39,43,44,47,48
 
 // X axis — traverse (wire guide left/right)
-// Avoiding GPIO 21-23 (I2S audio) and 20 (C6 reset)
-#define PIN_X_STEP   33
-#define PIN_X_DIR    34
-#define PIN_X_EN     35
+#define PIN_X_STEP   43
+#define PIN_X_DIR    44
+#define PIN_X_EN     47
 
 // Y axis — radial (wire guide distance from bobbin)
-#define PIN_Y_STEP   37
-#define PIN_Y_DIR    38
-#define PIN_Y_EN     39
+#define PIN_Y_STEP   48
+#define PIN_Y_DIR    35
+#define PIN_Y_EN     37
 
 // Spindle (rotates bobbin)
-#define PIN_SP_STEP  24
-#define PIN_SP_DIR   25
-#define PIN_SP_EN    26
+#define PIN_SP_STEP  38
+#define PIN_SP_DIR   39
+#define PIN_SP_EN    24
 
 // Limit switches
-#define PIN_X_HOME   27
-#define PIN_Y_HOME   28
+#define PIN_X_HOME   25
+#define PIN_Y_HOME   26
 
 // E-stop
-#define PIN_ESTOP    29
+#define PIN_ESTOP    27
 
 // ============================================================
 // Hardware state

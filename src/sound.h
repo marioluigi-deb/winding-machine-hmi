@@ -2,6 +2,8 @@
 
 void sound_init();
 void sound_poll();
+
+// These queue the sound — non-blocking, safe from LVGL callbacks
 void sound_beep(int freq_hz, int duration_ms);
 void sound_start_tone();
 void sound_stop_tone();
