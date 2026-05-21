@@ -4,6 +4,7 @@
 
 // Screen IDs
 enum class Screen : uint8_t {
+    SPLASH,
     HOME,
     SETUP,
     MANUAL,
@@ -41,8 +42,10 @@ lv_obj_t *ui_manual_create(lv_obj_t *parent);
 lv_obj_t *ui_run_create(lv_obj_t *parent);
 lv_obj_t *ui_settings_create(lv_obj_t *parent);
 lv_obj_t *ui_wifi_create(lv_obj_t *parent);
+lv_obj_t *ui_splash_create(lv_obj_t *parent);
 
 // Screen update callbacks (called every frame when screen is active)
+void ui_splash_update();
 void ui_home_update();
 void ui_setup_update();
 void ui_manual_update();

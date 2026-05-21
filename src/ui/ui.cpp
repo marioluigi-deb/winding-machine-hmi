@@ -1,13 +1,18 @@
 #include "ui.h"
 #include "../motion.h"
 #include "../storage.h"
+#include <Arduino.h>
 
 WindingProgram ui_program = {};
 MachineConfig  ui_config  = {};
 int            ui_selected_slot = 0;
 
-static lv_obj_t *screens[6] = {};
-static Screen    active_screen = Screen::HOME;
+static lv_obj_t *screens[7] = {};
+static Screen    active_screen = Screen::SPLASH;
+static unsigned long last_touch_time = 0;
+#define SCREENSAVER_TIMEOUT_MS 120000  // 2 minutes idle
+
+extern void ui_splash_start();
 
 const char *machine_status_str(MachineStatus st) {
     switch (st) {
@@ -96,14 +101,17 @@ void ui_init() {
     // Set root background
     lv_obj_set_style_bg_color(lv_scr_act(), COLOR_BG, 0);
 
-    screens[0] = ui_home_create(nullptr);
-    screens[1] = ui_setup_create(nullptr);
-    screens[2] = ui_manual_create(nullptr);
-    screens[3] = ui_run_create(nullptr);
-    screens[4] = ui_settings_create(nullptr);
-    screens[5] = ui_wifi_create(nullptr);
+    screens[0] = ui_splash_create(nullptr);
+    screens[1] = ui_home_create(nullptr);
+    screens[2] = ui_setup_create(nullptr);
+    screens[3] = ui_manual_create(nullptr);
+    screens[4] = ui_run_create(nullptr);
+    screens[5] = ui_settings_create(nullptr);
+    screens[6] = ui_wifi_create(nullptr);
 
-    ui_navigate(Screen::HOME);
+    last_touch_time = millis();
+    ui_navigate(Screen::SPLASH);
+    ui_splash_start();
 }
 
 void ui_navigate(Screen scr) {
@@ -112,7 +120,32 @@ void ui_navigate(Screen scr) {
 }
 
 void ui_update() {
+    // Detect touch activity for screensaver
+    lv_indev_t *indev = lv_indev_get_act();
+    if (indev == nullptr) indev = lv_indev_get_next(nullptr);
+    lv_point_t p;
+    if (indev) lv_indev_get_point(indev, &p);
+    static lv_point_t last_p = {0, 0};
+    bool touched = (indev && (p.x != last_p.x || p.y != last_p.y));
+    last_p = p;
+    if (touched) {
+        last_touch_time = millis();
+        if (active_screen == Screen::SPLASH) {
+            ui_navigate(Screen::HOME);
+            return;
+        }
+    }
+
+    // Screensaver: show splash after 2 min idle (but not during winding)
+    if (active_screen != Screen::SPLASH && active_screen != Screen::RUN) {
+        if (millis() - last_touch_time > SCREENSAVER_TIMEOUT_MS) {
+            ui_navigate(Screen::SPLASH);
+            ui_splash_start();
+        }
+    }
+
     switch (active_screen) {
+        case Screen::SPLASH:   ui_splash_update();   break;
         case Screen::HOME:     ui_home_update();     break;
         case Screen::SETUP:    ui_setup_update();    break;
         case Screen::MANUAL:   ui_manual_update();   break;
