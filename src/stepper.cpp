@@ -5,10 +5,12 @@ void stepper_init(Stepper &s) {
     if (s.pin_step == 0xFF) return;
     pinMode(s.pin_step, OUTPUT);
     pinMode(s.pin_dir, OUTPUT);
-    pinMode(s.pin_en, OUTPUT);
+    if (s.pin_en != 0xFF) {
+        pinMode(s.pin_en, OUTPUT);
+        digitalWrite(s.pin_en, HIGH);
+    }
     if (s.pin_home != 0xFF)
         pinMode(s.pin_home, INPUT_PULLUP);
-    digitalWrite(s.pin_en, HIGH);
     digitalWrite(s.pin_step, LOW);
     s.position = 0;
     s.target = 0;

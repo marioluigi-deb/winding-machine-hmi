@@ -4,31 +4,30 @@
 #include <Arduino.h>
 
 // === P4 GPIO assignments for stepper drivers (DM542) ===
-// Free P4 GPIOs after display/touch/SDIO/audio/camera:
-// Used: 2-19(LCD), 20(C6rst), 21-23(I2S), 33-34(cam SCCB), 36,42,45,46(touch), 40-41(sync), 49-54(SDIO)
-// Available: 0,1,24-32,35,37-39,43,44,47,48
+// CrowPanel Crowtail connector GPIOs:
+// UART1: GPIO 47 (TX), GPIO 48 (RX)
+// UART0: GPIO 43 (TX), GPIO 44 (RX)
+// ENA tied to GND on DM542 (always enabled)
 
-// X axis — traverse (wire guide left/right)
-#define PIN_X_STEP   43
-#define PIN_X_DIR    44
-#define PIN_X_EN     47
+// X axis — traverse (UART1 connector)
+#define PIN_X_STEP   47
+#define PIN_X_DIR    48
+#define PIN_X_EN     -1   // tied to GND on DM542
 
-// Y axis — radial (wire guide distance from bobbin)
-#define PIN_Y_STEP   48
-#define PIN_Y_DIR    35
-#define PIN_Y_EN     37
+// Y axis — radial (UART0 connector)
+#define PIN_Y_STEP   43
+#define PIN_Y_DIR    44
+#define PIN_Y_EN     -1   // tied to GND on DM542
 
-// Spindle (rotates bobbin)
-#define PIN_SP_STEP  38
-#define PIN_SP_DIR   39
-#define PIN_SP_EN    24
+// Spindle — not connected yet (no free connector)
+#define PIN_SP_STEP  -1
+#define PIN_SP_DIR   -1
+#define PIN_SP_EN    -1
 
-// Limit switches
-#define PIN_X_HOME   25
-#define PIN_Y_HOME   26
-
-// E-stop
-#define PIN_ESTOP    27
+// No limit switches or e-stop (no free GPIOs on connectors)
+#define PIN_X_HOME   -1
+#define PIN_Y_HOME   -1
+#define PIN_ESTOP    -1
 
 // ============================================================
 // Hardware state
@@ -50,26 +49,7 @@ static void IRAM_ATTR step_timer_isr() {
 }
 
 static void check_limits() {
-    if (digitalRead(PIN_ESTOP) == LOW && !estop_active) {
-        estop_active = true;
-        spindle_stop(spindle_motor);
-        stepper_stop(axis_x);
-        stepper_stop(axis_y);
-        winder.abort();
-        state.status = MachineStatus::ESTOP;
-        strncpy(state.error_msg, "E-STOP triggered", sizeof(state.error_msg));
-    }
-
-    if (axis_x.moving && digitalRead(PIN_X_HOME) == LOW) {
-        stepper_stop(axis_x);
-        axis_x.position = 0;
-        axis_x.homed = true;
-    }
-    if (axis_y.moving && digitalRead(PIN_Y_HOME) == LOW) {
-        stepper_stop(axis_y);
-        axis_y.position = 0;
-        axis_y.homed = true;
-    }
+    // No limit switches or e-stop connected (no free GPIOs)
 }
 
 static void update_state() {
@@ -100,38 +80,46 @@ static void update_state() {
 // ============================================================
 
 void motion_init() {
-    Serial.println("MOTION: init state machine (GPIO deferred until drivers connected)");
+    Serial.println("MOTION: init steppers");
 
-    // Set up structs with config but skip GPIO init
-    // GPIO pins will be initialized when stepper drivers are physically connected
+    // X axis — traverse (UART1 connector: GPIO 47 step, 48 dir)
     axis_x = {};
     axis_x.pin_step = PIN_X_STEP;
     axis_x.pin_dir = PIN_X_DIR;
-    axis_x.pin_en = PIN_X_EN;
-    axis_x.pin_home = PIN_X_HOME;
+    axis_x.pin_en = 0xFF;  // no enable pin
+    axis_x.pin_home = 0xFF;
     axis_x.steps_per_mm = DEFAULT_STEPS_PER_MM_X;
     axis_x.max_feed = DEFAULT_MAX_FEED_X / 60.0f;
     axis_x.accel = DEFAULT_ACCEL_X;
+    stepper_init(axis_x);
 
+    // Y axis — radial (UART0 connector: GPIO 43 step, 44 dir)
     axis_y = {};
     axis_y.pin_step = PIN_Y_STEP;
     axis_y.pin_dir = PIN_Y_DIR;
-    axis_y.pin_en = PIN_Y_EN;
-    axis_y.pin_home = PIN_Y_HOME;
+    axis_y.pin_en = 0xFF;
+    axis_y.pin_home = 0xFF;
     axis_y.steps_per_mm = DEFAULT_STEPS_PER_MM_Y;
     axis_y.max_feed = DEFAULT_MAX_FEED_Y / 60.0f;
     axis_y.accel = DEFAULT_ACCEL_Y;
+    stepper_init(axis_y);
 
+    // Spindle — not connected (no free connector)
     spindle_motor = {};
-    spindle_motor.pin_step = PIN_SP_STEP;
-    spindle_motor.pin_dir = PIN_SP_DIR;
-    spindle_motor.pin_en = PIN_SP_EN;
+    spindle_motor.pin_step = 0xFF;
+    spindle_motor.pin_dir = 0xFF;
+    spindle_motor.pin_en = 0xFF;
     spindle_motor.steps_per_rev = DEFAULT_STEPS_PER_REV;
 
     winder.init(&axis_x, &axis_y, nullptr, &spindle_motor);
     state.status = MachineStatus::IDLE;
 
-    Serial.println("MOTION: ready (hardware init deferred)");
+    // 20kHz step timer — integer-only ISR
+    step_timer = timerBegin(1000000);
+    timerAttachInterrupt(step_timer, &step_timer_isr);
+    timerAlarm(step_timer, 1000000 / STEP_ISR_HZ, true, 0);
+
+    Serial.println("MOTION: ready — X(47,48) Y(43,44) timer 20kHz");
 }
 
 void motion_poll() {
