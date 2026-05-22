@@ -25,62 +25,101 @@ A complete motor winding machine controller with touchscreen HMI, web dashboard,
 |------|-----|-------|-------------|
 | CrowPanel Advanced 5" ESP32-P4 | 1 | 800x480 IPS, ESP32-P4 + ESP32-C6, 32MB PSRAM, 16MB Flash | $45 |
 | Rattmotor ZBX80 200mm Linear Stage | 2 | SFU1605 ballscrew (5mm lead), NEMA23 stepper, 200mm stroke | $80 ea |
-| DM542 Stepper Driver | 3 | 4.2A peak, step/dir interface, 24-48V input | $15 ea |
-| NEMA23 Stepper Motor (spindle) | 1 | 1.8 deg, 3A, for rotating the winding bobbin | $25 |
+| DM542 Stepper Driver | 2 | 4.2A peak, step/dir interface, 24-48V input | $15 ea |
 | 24V Power Supply | 1 | 24V 10A (240W) for stepper drivers | $20 |
 | USB-C cable | 1 | For programming the CrowPanel | $5 |
-| Limit switches (optional) | 2 | Microswitch, NO, for X/Y homing | $3 |
-| E-stop button (optional) | 1 | NC mushroom button | $5 |
 | Hookup wire | — | 22AWG for signal, 18AWG for motor power | $10 |
 
-**Total: ~$350**
+**Total: ~$260**
 
 ### Wiring Diagram
 
+The CrowPanel P4 exposes GPIOs through **Crowtail 4-pin connectors**. Each connector has VCC, GND, and 2 signal pins.
+
 ```
-CrowPanel P4 GPIO Header          DM542 #1 (X Traverse)
-─────────────────────              ─────────────────────
-GPIO 33 ──────────────────────────► PUL+ (step)
-GPIO 34 ──────────────────────────► DIR+ (direction)
-GPIO 35 ──────────────────────────► ENA+ (enable)
-                                    PUL-/DIR-/ENA- ──► GND
+CrowPanel Crowtail Connectors         DM542 Stepper Drivers
+═══════════════════════════════         ══════════════════════
 
-                                   DM542 #2 (Y Radial)
-                                   ─────────────────────
-GPIO 37 ──────────────────────────► PUL+
-GPIO 38 ──────────────────────────► DIR+
-GPIO 39 ──────────────────────────► ENA+
-                                    PUL-/DIR-/ENA- ──► GND
+UART1 Connector                        DM542 #1 (X Traverse)
+┌──────────────────────┐               ┌──────────────────────┐
+│ VCC  GND  47    48   │               │                      │
+│           TX    RX   │               │  PUL+  DIR+  ENA+    │
+└──────┬───┬──────┬────┘               │  PUL-  DIR-  ENA-    │
+       │   │      │                    └──┬────┬────┬─────────┘
+       │   │      │                       │    │    │
+       │   │      └── wire ──────────────►│DIR+│    │
+       │   └── wire ──► PUL- DIR- ENA-────┘    │    │
+       └────── wire ────────────────────►PUL+   │    │
+                                                │    │
+               GND ──── wire ──────────────────►ENA+ │
+               GND ──── wire ──────────────────►ENA- ┘
 
-                                   DM542 #3 (Spindle)
-                                   ─────────────────────
-GPIO 24 ──────────────────────────► PUL+
-GPIO 25 ──────────────────────────► DIR+
-GPIO 26 ──────────────────────────► ENA+
-                                    PUL-/DIR-/ENA- ──► GND
-
-Limit Switches & E-Stop
-────────────────────────
-GPIO 27 ◄──── X home switch ──── GND  (internal pullup)
-GPIO 28 ◄──── Y home switch ──── GND  (internal pullup)
-GPIO 29 ◄──── E-stop button ──── GND  (internal pullup, NC)
-
-Power
-─────
-24V PSU ──► DM542 V+ (all 3 drivers)
-GND     ──► DM542 V- (all 3 drivers)
-USB-C   ──► CrowPanel (5V, programming + power)
+UART0 Connector                        DM542 #2 (Y Radial)
+┌──────────────────────┐               ┌──────────────────────┐
+│ VCC  GND  43    44   │               │                      │
+│           TX    RX   │               │  PUL+  DIR+  ENA+    │
+└──────┬───┬──────┬────┘               │  PUL-  DIR-  ENA-    │
+       │   │      │                    └──┬────┬────┬─────────┘
+       │   │      │                       │    │    │
+       │   │      └── wire ──────────────►│DIR+│    │
+       │   └── wire ──► PUL- DIR- ENA-────┘    │    │
+       └────── wire ────────────────────►PUL+   │    │
+                                                │    │
+               GND ──── wire ──────────────────►ENA+ │
+               GND ──── wire ──────────────────►ENA- ┘
 ```
 
-**DM542 Motor Wiring:** Connect each NEMA23 stepper's A+/A-/B+/B- to the corresponding DM542 outputs. Set DM542 microstepping to **16x** (SW5=ON, SW6=ON, SW7=OFF, SW8=OFF on most models) and current to **3A** peak.
+**Simplified wiring per DM542:**
+
+| CrowPanel Pin | DM542 Pin | Wire Color Suggestion |
+|---------------|-----------|----------------------|
+| GPIO 47 (UART1 TX) | DM542 #1 PUL+ | Yellow |
+| GPIO 48 (UART1 RX) | DM542 #1 DIR+ | Green |
+| GND (UART1) | DM542 #1 PUL-, DIR-, ENA+, ENA- | Black (4 wires or daisy-chain) |
+| GPIO 43 (UART0 TX) | DM542 #2 PUL+ | Yellow |
+| GPIO 44 (UART0 RX) | DM542 #2 DIR+ | Green |
+| GND (UART0) | DM542 #2 PUL-, DIR-, ENA+, ENA- | Black |
+
+**Power (separate from signal):**
+
+```
+24V Power Supply
+────────────────
+24V+ ───────► DM542 #1 V+  AND  DM542 #2 V+      (red wire, 18AWG)
+24V- (GND) ─► DM542 #1 V-  AND  DM542 #2 V-      (black wire, 18AWG)
+
+USB-C ──────► CrowPanel (5V power + programming)
+```
+
+**Motor wires (NEMA23 to DM542):**
+
+```
+Rattmotor ZBX80 #1 motor cable ───► DM542 #1: A+ A- B+ B-
+Rattmotor ZBX80 #2 motor cable ───► DM542 #2: A+ A- B+ B-
+```
+
+**DM542 DIP Switch Settings (16x microstepping, 3A peak):**
+
+| Switch | Position | Function |
+|--------|----------|----------|
+| SW1 | ON | Peak current 3A |
+| SW2 | ON | |
+| SW3 | OFF | |
+| SW4 | OFF | Pulse active rising edge |
+| SW5 | ON | 16x microstepping |
+| SW6 | ON | |
+| SW7 | OFF | |
+| SW8 | OFF | |
+
+> **Note:** The DM542 ENA+ and ENA- are both tied to GND, keeping the driver always enabled. This is because the CrowPanel only has 4 accessible GPIOs on the Crowtail connectors (2 per connector), and all 4 are used for step + direction signals.
 
 ### Machine Axes
 
-| Axis | Function | Hardware | Travel |
-|------|----------|----------|--------|
-| X | Traverse — guides wire left/right across bobbin | Rattmotor ZBX80 | 200mm |
-| Y | Radial — adjusts wire guide distance as layers build | Rattmotor ZBX80 | 200mm |
-| Spindle | Rotates the winding bobbin/form | NEMA23 + chuck/coupler | continuous |
+| Axis | Function | Hardware | Connector | GPIOs | Travel |
+|------|----------|----------|-----------|-------|--------|
+| X | Traverse — guides wire left/right across bobbin | Rattmotor ZBX80 + DM542 | UART1 Crowtail | 47 (step), 48 (dir) | 200mm |
+| Y | Radial — adjusts wire guide distance as layers build | Rattmotor ZBX80 + DM542 | UART0 Crowtail | 43 (step), 44 (dir) | 200mm |
+| Spindle | Rotates the winding bobbin/form | Not connected (no free GPIOs) | — | — | — |
 
 ### Motion Parameters (defaults, adjustable in Settings screen)
 
@@ -236,7 +275,9 @@ Hard-won lessons from development:
 - **No `WiFi.mode(WIFI_STA)`** — Blocks ESP-Hosted events; just call `WiFi.begin()` directly
 - **STC8H1KXX backlight** — Controlled via I2C (addr 0x2F), not GPIO
 - **Wire only** — Old ESP-IDF I2C driver conflicts with Arduino Wire; use Wire exclusively
-- **GPIO 33-39 caution** — May conflict with flash/PSRAM on some P4 boards
+- **GPIO access limited** — Only 4 GPIOs accessible via Crowtail connectors (43, 44, 47, 48). GPIOs 33-39 cause hangs (flash/PSRAM conflict). Internal GPIOs 0-19, 20-23 are used by LCD, audio, and SDIO.
+- **I2S + LCD DMA conflict** — I2S audio crashes when LCD RGB DMA is active (P4 GDMA conflict in ESP-IDF 5.5). Onboard speaker unusable. Use external piezo buzzer on a Crowtail GPIO if sound is needed.
+- **Stepper enable** — DM542 ENA+/ENA- both tied to GND (always enabled) since no free GPIOs for enable control.
 
 ## License
 
