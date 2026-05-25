@@ -17,7 +17,7 @@ void setup() {
     Serial.println("=== Winding Machine HMI v2.0 ===");
 
     storage_init();
-    display_init();       // LCD + LVGL, backlight stays OFF
+    display_init();
     ui_init();
     motion_init();
     wifi_init();

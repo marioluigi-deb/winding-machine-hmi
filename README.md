@@ -50,39 +50,36 @@ CrowPanel P4 Expansion Header
 CrowPanel                              DM542 Drivers
 ─────────                              ─────────────
 
-GPIO 47 ────────────────────────────► DM542 #1 PUL+   (X traverse step)
-GPIO 48 ────────────────────────────► DM542 #1 DIR+   (X traverse dir)
-GND ────────────────────────────────► DM542 #1 PUL-
-GND ────────────────────────────────► DM542 #1 DIR-
-GND ────────────────────────────────► DM542 #1 ENA+ & ENA-  (always enabled)
+NOTE: ESP32-P4 GPIOs are 3.3V — too low to drive DM542 optocouplers (5V-24V min).
+A ULN2003 Darlington driver is required between the CrowPanel GPIOs and DM542 inputs.
 
-GPIO 29 ────────────────────────────► DM542 #2 PUL+   (Y radial step)
-GPIO 30 ────────────────────────────► DM542 #2 DIR+   (Y radial dir)
-GND ────────────────────────────────► DM542 #2 PUL-
-GND ────────────────────────────────► DM542 #2 DIR-
-GND ────────────────────────────────► DM542 #2 ENA+ & ENA-  (always enabled)
-
-GPIO 31 ────────────────────────────► DM542 #3 PUL+   (Spindle step)
-GPIO 32 ────────────────────────────► DM542 #3 DIR+   (Spindle dir)
-GND ────────────────────────────────► DM542 #3 PUL-
-GND ────────────────────────────────► DM542 #3 DIR-
-GND ────────────────────────────────► DM542 #3 ENA+ & ENA-  (always enabled)
+GPIO 47 ──► ULN2003 IN1 ──► OUT1 ──► DM542 #1 PUL-   (X traverse step)
+GPIO 48 ──► ULN2003 IN2 ──► OUT2 ──► DM542 #1 DIR-   (X traverse dir)
+GPIO 29 ──► ULN2003 IN3 ──► OUT3 ──► DM542 #2 PUL-   (Y radial step)
+GPIO 30 ──► ULN2003 IN4 ──► OUT4 ──► DM542 #2 DIR-   (Y radial dir)
+GPIO 31 ──► ULN2003 IN5 ──► OUT5 ──► DM542 #3 PUL-   (Spindle step)
+GPIO 32 ──► ULN2003 IN6 ──► OUT6 ──► DM542 #3 DIR-   (Spindle dir)
+24V+ ───────────────────────────────► DM542 #1/#2/#3 PUL+  (opto anode)
+24V+ ───────────────────────────────► DM542 #1/#2/#3 DIR+  (opto anode)
+GND  ───────────────────────────────► ULN2003 GND
+                                      DM542 #1/#2/#3 ENA+/ENA- floating
 
 GPIO 26 ◄──────── NC E-stop switch ──── GND   (normally open, grounds pin when pressed)
 ```
 
 **Wiring table:**
 
-| CrowPanel Pin | DM542 Pin | Function |
-|---------------|-----------|----------|
-| GPIO 47 | DM542 #1 PUL+ | X traverse step |
-| GPIO 48 | DM542 #1 DIR+ | X traverse dir |
-| GPIO 29 | DM542 #2 PUL+ | Y radial step |
-| GPIO 30 | DM542 #2 DIR+ | Y radial dir |
-| GPIO 31 | DM542 #3 PUL+ | Spindle step |
-| GPIO 32 | DM542 #3 DIR+ | Spindle dir |
-| GPIO 26 | E-stop switch | Active LOW, internal pullup |
-| GND (x5) | DM542 #1/#2/#3 PUL-, DIR-, ENA+, ENA- | Common ground |
+| CrowPanel Pin | ULN2003 | DM542 Pin | Function |
+|---------------|---------|-----------|----------|
+| GPIO 47 | IN1→OUT1 | DM542 #1 PUL- | X traverse step |
+| GPIO 48 | IN2→OUT2 | DM542 #1 DIR- | X traverse dir |
+| GPIO 29 | IN3→OUT3 | DM542 #2 PUL- | Y radial step |
+| GPIO 30 | IN4→OUT4 | DM542 #2 DIR- | Y radial dir |
+| GPIO 31 | IN5→OUT5 | DM542 #3 PUL- | Spindle step |
+| GPIO 32 | IN6→OUT6 | DM542 #3 DIR- | Spindle dir |
+| GPIO 26 | — | E-stop switch | Active LOW, internal pullup |
+| 24V+ | — | DM542 #1/#2/#3 PUL+ and DIR+ | Opto anode supply |
+| GND | GND | — | Common ground (24V PSU + CrowPanel) |
 
 **Power (separate from signal):**
 
@@ -98,9 +95,9 @@ USB-C ──► CrowPanel (5V power + programming)
 **Motor wires (NEMA23 to DM542):**
 
 ```
-Rattmotor ZBX80 #1 motor cable ───► DM542 #1: A+ A- B+ B-  (X traverse)
-Rattmotor ZBX80 #2 motor cable ───► DM542 #2: A+ A- B+ B-  (Y radial)
-Spindle NEMA23 motor cable     ───► DM542 #3: A+ A- B+ B-  (Spindle)
+Rattmotor ZBX80 #1:  A+(Black)  A-(Green)  B+(Red)  B-(Blue)   (X traverse)
+Rattmotor ZBX80 #2:  A+(Black)  A-(Green)  B+(Red)  B-(Blue)   (Y radial)
+Spindle NEMA23:      A+(Black)  A-(Green)  B+(Red)  B-(Blue)   (Spindle)
 ```
 
 **DM542 DIP Switch Settings (16x microstepping, 3A peak):**

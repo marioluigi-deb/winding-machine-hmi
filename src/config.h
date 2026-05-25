@@ -51,7 +51,7 @@
 #define PIN_Y_DIR       30
 #define PIN_SP_STEP     31
 #define PIN_SP_DIR      32
-#define PIN_ESTOP       26    // E-stop input, active LOW with internal pullup
+#define PIN_ESTOP       26
 
 #endif // BOARD_CROWPANEL_P4
 

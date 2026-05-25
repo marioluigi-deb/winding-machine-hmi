@@ -92,7 +92,6 @@ void motion_init() {
     spindle_motor.steps_per_rev = DEFAULT_STEPS_PER_REV;
     spindle_init(spindle_motor);
 
-    // E-stop input — active LOW with internal pullup
     pinMode(PIN_ESTOP, INPUT_PULLUP);
 
     winder.init(&axis_x, &axis_y, nullptr, &spindle_motor);
