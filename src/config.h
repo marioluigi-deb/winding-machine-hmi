@@ -34,7 +34,7 @@
 #define PIN_LCD_B2      17
 #define PIN_LCD_B3      18
 #define PIN_LCD_B4      19
-#define PIN_LCD_BL      26
+// Backlight: STC8 I2C (0x2F), not GPIO — no PIN_LCD_BL needed on P4
 
 // Touch (GT911 I2C) — P4 pinout
 #define PIN_TOUCH_SDA   45
@@ -43,11 +43,15 @@
 #define PIN_TOUCH_RST   36
 #define TOUCH_I2C_ADDR  0x5D
 
-// UART to motion controller (C6 or external)
-// Uses P4 GPIO header pins
-#define PIN_MC_TX       43
-#define PIN_MC_RX       44
-#define MC_BAUD         500000  // faster link between co-processors
+// === Stepper driver pins (direct step/dir to DM542 drivers) ===
+// CrowPanel P4 expansion header GPIOs: 26, 29, 30, 31, 32, 47, 48
+#define PIN_X_STEP      47
+#define PIN_X_DIR       48
+#define PIN_Y_STEP      29
+#define PIN_Y_DIR       30
+#define PIN_SP_STEP     31
+#define PIN_SP_DIR      32
+#define PIN_ESTOP       26    // E-stop input, active LOW with internal pullup
 
 #endif // BOARD_CROWPANEL_P4
 

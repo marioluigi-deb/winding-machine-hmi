@@ -27,8 +27,10 @@ void spindle_init(SpindleMotor &sp) {
     if (sp.pin_step == 0xFF) return;
     pinMode(sp.pin_step, OUTPUT);
     pinMode(sp.pin_dir, OUTPUT);
-    pinMode(sp.pin_en, OUTPUT);
-    digitalWrite(sp.pin_en, HIGH);
+    if (sp.pin_en != 0xFF) {
+        pinMode(sp.pin_en, OUTPUT);
+        digitalWrite(sp.pin_en, HIGH);
+    }
     digitalWrite(sp.pin_step, LOW);
     sp.rpm = 0;
     sp.target_rpm = 0;
@@ -128,7 +130,7 @@ void stepper_move_to(Stepper &s, float pos_mm, float feed_mms) {
     s.i_accel_per_tick = (int32_t)(s.accel * s.steps_per_mm / STEP_ISR_HZ);
     if (s.i_accel_per_tick < 1) s.i_accel_per_tick = 1;
     s.moving = true;
-    digitalWrite(s.pin_en, LOW);
+    if (s.pin_en != 0xFF) digitalWrite(s.pin_en, LOW);
 }
 
 void stepper_jog(Stepper &s, float dist_mm) {
@@ -149,7 +151,7 @@ bool stepper_home(Stepper &s, float feed_mms) {
     s.i_accel_per_tick = (int32_t)(s.accel * s.steps_per_mm / STEP_ISR_HZ);
     if (s.i_accel_per_tick < 1) s.i_accel_per_tick = 1;
     s.moving = true;
-    digitalWrite(s.pin_en, LOW);
+    if (s.pin_en != 0xFF) digitalWrite(s.pin_en, LOW);
     return true;
 }
 
@@ -163,7 +165,7 @@ void spindle_set_rpm(SpindleMotor &sp, float rpm) {
     sp.i_spr = (int32_t)sp.steps_per_rev;
     if (rpm > 0 && sp.direction != 0) {
         sp.running = true;
-        digitalWrite(sp.pin_en, LOW);
+        if (sp.pin_en != 0xFF) digitalWrite(sp.pin_en, LOW);
     }
 }
 
@@ -174,7 +176,7 @@ void spindle_set_dir(SpindleMotor &sp, int dir) {
         sp.i_target_rpm_x100 = 0;
     } else {
         sp.running = true;
-        digitalWrite(sp.pin_en, LOW);
+        if (sp.pin_en != 0xFF) digitalWrite(sp.pin_en, LOW);
     }
 }
 
